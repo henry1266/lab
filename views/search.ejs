@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>搜尋結果 - <%= keyword %></title>
+    <style>
+        body { font-family: sans-serif; margin: 20px; background-color: #f4f4f4; color: #333; }
+        h1 { color: #333; }
+        a { text-decoration: none; color: #0275d8; }
+        a:hover { text-decoration: underline; }
+        ul { list-style-type: none; padding: 0; }
+        li { background-color: #fff; margin-bottom: 8px; padding: 10px; border-radius: 4px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+    </style>
+</head>
+<body>
+    <h1>搜尋結果 for "<%= keyword %>"</h1>
+    <a href="/">← 回首頁</a>
+    <% if (patients && patients.length > 0) { %>
+        <ul>
+            <% patients.forEach(p => { %>
+                <li><a href="/person/<%= p.idno %>"><%= p.patnm || undle_id(無名)undle_id %> - <%= p.idno %> (<%= p.birdt %>)</a></li>
+            <% }); %>
+        </ul>
+    <% } else { %>
+        <p>找不到符合條件的病患。</p>
+    <% } %>
+</body>
+</html>

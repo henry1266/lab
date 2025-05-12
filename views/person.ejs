@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>病患報告 - <%= patient.patnm || '(無名)' %> (<%= patient.idno %>)</title>
+    <style>
+        body { font-family: sans-serif; margin: 20px; background-color: #f4f4f4; color: #333; }
+        .container { max-width: 800px; margin: auto; background-color: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        h2, h3, h4 { color: #333; }
+        p { margin-bottom: 10px; }
+        a { text-decoration: none; color: #0275d8; }
+        a:hover { text-decoration: underline; }
+        .report-card {
+            background-color: #fff;
+            margin-bottom: 20px;
+            padding: 15px;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+        }
+        .category-title {
+            background-color: #e9ecef;
+            padding: 10px;
+            margin-top: 15px;
+            margin-bottom: 0px;
+            border-radius: 4px 4px 0 0;
+            cursor: pointer;
+            font-weight: bold;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .category-title:hover {
+            background-color: #dcdcdc;
+        }
+        .category-content {
+            padding: 10px;
+            border: 1px solid #e9ecef;
+            border-top: none;
+            border-radius: 0 0 4px 4px;
+            display: block; /* Initially shown */
+        }
+        .category-content ul { list-style-type: none; padding-left: 0; margin-top: 0; }
+        .category-content li { margin-bottom: 8px; padding: 5px; border-bottom: 1px dashed #eee; }
+        .category-content li:last-child { border-bottom: none; }
+        small { color: #777; font-size: 0.9em; }
+        .toggle-icon { font-size: 1.2em; }
+        hr { border: 0; height: 1px; background: #ddd; margin: 20px 0; }
+        .back-link { display: inline-block; margin-top: 20px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <% if (patient) { %>
+            <h2><%= patient.patnm || '(無名)' %> (<%= patient.idno %>)</h2>
+            <p>生日：<%= patient.birdt %></p>
+            <h3>共 <%= records.length %> 筆報告</h3>
+
+            <% records.forEach(r => { %>
+                <div class="report-card">
+                    <h4>報告日期：<%= r.rptdt %>（掛號號碼：<%= r.regno %>）</h4>
+                    <% 
+                    const orderedCategories = [
+                        "血脂肪檢查", "糖尿病檢查", "腎功能", "肝功能", 
+                        "血液檢查", "尿液檢查", "糞便檢查", "其他檢查"
+                    ];
+                    const reportCategories = orderedCategories.filter(catName => r.categorizedItems && r.categorizedItems[catName] && r.categorizedItems[catName].length > 0);
+                    %>
+
+                    <% reportCategories.forEach(categoryName => { %>
+                        <% const itemsInCategory = r.categorizedItems[categoryName]; %>
+                        <% if (itemsInCategory && itemsInCategory.length > 0) { %>
+                            <div class="category-title" onclick="toggleCategory(this)">
+                                <span><%= categoryName %> (<%= itemsInCategory.length %>)</span>
+                                <span class="toggle-icon">-</span> <!-- Initially show minus for expanded -->
+                            </div>
+                            <div class="category-content open"> <!-- Add 'open' class for initial display -->
+                                <ul>
+                                    <% itemsInCategory.forEach(item => { %>
+                                        <li>
+                                            <%= item.itmnm || '(無項目)' %>：<%= item.result || '—' %> <%= item.rstunit || '' %> 
+                                            <small>[正常範圍: <%= item.nlow || '-' %> ~ <%= item.nhigh || '-' %>]</small>
+                                        </li>
+                                    <% }); %>
+                                </ul>
+                            </div>
+                        <% } %>
+                    <% }); %>
+                </div>
+            <% }); %>
+        <% } else { %>
+            <p>找不到病患資料。</p>
+        <% } %>
+        <a href="/" class="back-link">← 回首頁</a>
+    </div>
+
+    <script>
+        function toggleCategory(element) {
+            const content = element.nextElementSibling;
+            const icon = element.querySelector('.toggle-icon');
+            // Toggle the 'open' class which controls display via CSS
+            if (content.classList.contains('open')) {
+                content.classList.remove('open');
+                content.style.display = "none"; // Explicitly hide
+                icon.textContent = "+";
+            } else {
+                content.classList.add('open');
+                content.style.display = "block"; // Explicitly show
+                icon.textContent = "-";
+            }
+        }
+    </script>
+</body>
+</html>
+
