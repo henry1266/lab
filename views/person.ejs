@@ -41,26 +41,24 @@
         .back-link { display: inline-block; margin-top: 15px; font-size: 0.9em; }
         table.comparison-table {
             border-collapse: collapse;
-            width: auto; /* Changed from 100% to auto for shrink-to-fit */
-            table-layout: auto; /* Ensure content-based sizing */
+            width: auto; 
+            table-layout: auto; 
             margin-top: 8px;
             box-shadow: 0 1px 2px rgba(0,0,0,0.1);
         }
         table.comparison-table th, table.comparison-table td {
             border: 1px solid #ddd;
             text-align: left;
-            padding: 6px 8px; /* Reduced padding */
+            padding: 6px 8px; 
             vertical-align: middle;
-            font-size: 0.9em; /* Slightly smaller font for compactness */
-            white-space: nowrap; /* Prevent wrapping in data cells to determine natural width, then allow wrapping if needed by overall layout */
+            font-size: 0.9em; 
+            white-space: nowrap; 
         }
         table.comparison-table th {
             background-color: #6c757d; 
             color: white;
             font-weight: bold;
-            /* white-space: nowrap; was already here, kept */
         }
-        /* Allow specific columns to wrap if needed, e.g., item name */
         table.comparison-table td.col-item-name, table.comparison-table th.col-item-name {
             white-space: normal; 
         }
@@ -72,13 +70,15 @@
         .col-normal-range {
             background-color: rgb(224, 224, 224);
             color: rgb(0, 0, 0);
-            
         }
-
         .col-unit {
             background-color: rgb(240, 240, 240);
             color: rgb(0, 0, 0);
         }
+        .trend-arrow { margin-left: 4px; font-weight: bold; }
+        .trend-up { color: green; }
+        .trend-down { color: red; }
+        .trend-stable { color: orange; }
     </style>
 </head>
 <body>
@@ -93,9 +93,7 @@
                 "血脂肪檢查", "糖尿病檢查", "腎功能", "肝功能", 
                 "血液檢查", "尿液檢查", "糞便檢查", "其他檢查"
             ];
-            // Sort dates: oldest to newest (latest on the right)
-            const allReportDates = [...new Set(records.map(r => r.rptdt))]
-    .sort((a, b) => Number(a) - Number(b));
+            const allReportDates = [...new Set(records.map(r => r.rptdt))].sort((a, b) => new Date(a.split('/').join('-')) - new Date(b.split('/').join('-')));
             %>
 
             <div class="controls">
@@ -149,7 +147,6 @@
                                 <thead>
                                     <tr>
                                         <th class="col-item-name">檢查項目</th>
-                                                                               
                                         <% allReportDates.forEach((date, index) => { %>
                                             <th class="date-col-<%= index %>"><%= date %></th>
                                         <% }); %>
@@ -160,14 +157,27 @@
                                 <tbody>
                                     <% Array.from(uniqueItemsInCategory).sort().forEach(itemName => { %>
                                         <% const details = itemDetailsMap.get(itemName); %>
+                                        <% let previousNumericResult = null; %>
+                                        <% let numericResultsCount = 0; %>
+                                        <% 
+                                          allReportDates.forEach(reportDate => {
+                                            const reportForDate = records.find(r => r.rptdt === reportDate);
+                                            if (reportForDate && reportForDate.categorizedItems && reportForDate.categorizedItems[categoryName]) {
+                                                const itemInReport = reportForDate.categorizedItems[categoryName].find(i => i.itmnm === itemName);
+                                                if (itemInReport && !isNaN(parseFloat(itemInReport.result))) {
+                                                    numericResultsCount++;
+                                                }
+                                            }
+                                          });
+                                        %>
                                         <tr data-item-name="<%= itemName %>">
-                                            <td class="col-item-name"><%= itemName || '無項目' %></td>                                        
-                                            
+                                            <td class="col-item-name"><%= itemName || '無項目' %></td>
                                             <% allReportDates.forEach((reportDate, index) => { %>
                                                 <% 
                                                     let cellContent = "—";
                                                     let statusSymbol = "";
                                                     let resultDisplay = "—";
+                                                    let trendSymbol = "";
                                                     const reportForDate = records.find(r => r.rptdt === reportDate);
                                                     let itemInReport = null;
                                                     if (reportForDate && reportForDate.categorizedItems && reportForDate.categorizedItems[categoryName]) {
@@ -176,27 +186,27 @@
 
                                                     if (itemInReport) {
                                                         resultDisplay = itemInReport.result || "—";
-                                                        const resultNum = parseFloat(itemInReport.result);
+                                                        const currentNumericResult = parseFloat(itemInReport.result);
                                                         const nlowNum = parseFloat(itemInReport.nlow);
                                                         const nhighNum = parseFloat(itemInReport.nhigh);
 
                                                         if (itemName === "HDL Cholesterol") {
-                                                            if (!isNaN(resultNum)) {
-                                                                if (resultNum >= 40) statusSymbol = (resultNum >= 42.5) ? "🟢" : "🟡";
+                                                            if (!isNaN(currentNumericResult)) {
+                                                                if (currentNumericResult >= 40) statusSymbol = (currentNumericResult >= 42.5) ? "🟢" : "🟡";
                                                                 else statusSymbol = "🔴";
-                                                                if (resultNum === 45 || resultNum === 42) resultDisplay = `<strong>${itemInReport.result}</strong>`; 
+                                                                if (currentNumericResult === 45 || currentNumericResult === 42) resultDisplay = `<strong>${itemInReport.result}</strong>`; 
                                                             }
                                                         } else if (itemName === "Triglyceride") {
-                                                            if (!isNaN(resultNum)) {
-                                                                if (resultNum >= 30 && resultNum <= 150) statusSymbol = "🟢";
+                                                            if (!isNaN(currentNumericResult)) {
+                                                                if (currentNumericResult >= 30 && currentNumericResult <= 150) statusSymbol = "🟢";
                                                                 else statusSymbol = "🔴";
-                                                                if (resultNum === 136 || resultNum === 138) resultDisplay = `<strong>${itemInReport.result}</strong>`;
+                                                                if (currentNumericResult === 136 || currentNumericResult === 138) resultDisplay = `<strong>${itemInReport.result}</strong>`;
                                                             }
                                                         } else if (itemName === "LDL Cholesterol") {
-                                                            if (!isNaN(resultNum)) {
-                                                                if (resultNum >= 20 && resultNum <= 130) statusSymbol = "🟢";
+                                                            if (!isNaN(currentNumericResult)) {
+                                                                if (currentNumericResult >= 20 && currentNumericResult <= 130) statusSymbol = "🟢";
                                                                 else statusSymbol = "🔴";
-                                                                if (resultNum === 64 || resultNum === 67) resultDisplay = `<strong>${itemInReport.result}</strong>`;
+                                                                if (currentNumericResult === 64 || currentNumericResult === 67) resultDisplay = `<strong>${itemInReport.result}</strong>`;
                                                             }
                                                         } else if (itemName === "HbA1c") {
                                                             if (itemInReport.result) {
@@ -208,15 +218,28 @@
                                                                 }
                                                             }
                                                         } else { 
-                                                            if (!isNaN(resultNum) && !isNaN(nlowNum) && !isNaN(nhighNum)) {
-                                                                if (resultNum < nlowNum) statusSymbol = "🔴";
-                                                                else if (resultNum > nhighNum) statusSymbol = "🔴";
+                                                            if (!isNaN(currentNumericResult) && !isNaN(nlowNum) && !isNaN(nhighNum)) {
+                                                                if (currentNumericResult < nlowNum) statusSymbol = "🔴";
+                                                                else if (currentNumericResult > nhighNum) statusSymbol = "🔴";
                                                                 else statusSymbol = "🟢";
                                                             }
                                                         }
-                                                        cellContent = `${resultDisplay} ${statusSymbol}`.trim();
+
+                                                        if (numericResultsCount >= 2 && !isNaN(currentNumericResult)) {
+                                                            if (previousNumericResult !== null && !isNaN(previousNumericResult)) {
+                                                                if (currentNumericResult > previousNumericResult) trendSymbol = '<span class="trend-arrow trend-up">↑</span>';
+                                                                else if (currentNumericResult < previousNumericResult) trendSymbol = '<span class="trend-arrow trend-down">↓</span>';
+                                                                else trendSymbol = '<span class="trend-arrow trend-stable">→</span>';
+                                                            }
+                                                            previousNumericResult = currentNumericResult;
+                                                        } else if (!isNaN(currentNumericResult)) {
+                                                            previousNumericResult = currentNumericResult; // Store first numeric value
+                                                        }
+
+                                                        cellContent = `${resultDisplay} ${statusSymbol} ${trendSymbol}`.trim();
                                                     } else {
                                                         cellContent = "—";
+                                                        previousNumericResult = null; // Reset if data is missing for this date
                                                     }
                                                 %>
                                                 <td class="date-col-<%= index %>" data-status="<%= statusSymbol %>"><%- cellContent %></td>
@@ -292,7 +315,7 @@
 
             if (toggleNormalRangeBtn) {
                 toggleNormalRangeBtn.addEventListener("click", () => {
-                    document.querySelectorAll(".comparison-table .col-normal-range").forEach(cell => {
+                    document.querySelectorAll(".comparison-table .col-normal-range, .comparison-table .col-unit").forEach(cell => {
                         cell.classList.toggle("col-hidden");
                     });
                 });
