@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>病患報告 - <%= patient.patnm || atas 無名ata %> (<%= patient.idno %>)</title>
+    <title>病患報告 - <%= patient.patnm || '無名' %> (<%= patient.idno %>)</title>
     <style>
         body { font-family: sans-serif; margin: 20px; background-color: #f4f4f4; color: #333; }
         .container { max-width: 1200px; margin: auto; background-color: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
@@ -66,7 +66,7 @@
 <body>
     <div class="container">
         <% if (patient && records && records.length > 0) { %>
-            <h2><%= patient.patnm || atas 無名ata %> (<%= patient.idno %>)</h2>
+            <h2><%= patient.patnm || '無名' %> (<%= patient.idno %>)</h2>
             <p>生日：<%= patient.birdt %></p>
             <h3>共 <%= records.length %> 筆報告 - 橫向對比</h3>
 
@@ -138,7 +138,7 @@
                                     <% Array.from(uniqueItemsInCategory).sort().forEach(itemName => { %>
                                         <% const details = itemDetailsMap.get(itemName); %>
                                         <tr>
-                                            <td class="col-item-name"><%= itemName || atas 無項目ata %></td>
+                                            <td class="col-item-name"><%= itemName || '無項目' %></td>
                                             <td class="col-normal-range"><%= details.range %></td>
                                             <% allReportDates.forEach((reportDate, index) => { %>
                                                 <% 
@@ -177,11 +177,11 @@
                                                             }
                                                         } else if (itemName === "HbA1c") {
                                                             if (itemInReport.result) {
-                                                                const hba1cVal = parseFloat(itemInReport.result.replace("%%",""));
+                                                                const hba1cVal = parseFloat(itemInReport.result.replace("%",""));
                                                                 if (!isNaN(hba1cVal)){
                                                                     if (hba1cVal >= 4.0 && hba1cVal <= 5.6) statusSymbol = "🟢";
                                                                     else statusSymbol = "🔴";
-                                                                    if (itemInReport.result === "6.6%%" || itemInReport.result === "6.9%%") resultDisplay = `<strong>${itemInReport.result}</strong>`;
+                                                                    if (itemInReport.result === "6.6%" || itemInReport.result === "6.9%") resultDisplay = `<strong>${itemInReport.result}</strong>`;
                                                                 }
                                                             }
                                                         } else { 
@@ -207,7 +207,7 @@
                 <% } %>
             <% }); %>
         <% } else if (patient) { %>
-             <h2><%= patient.patnm || atas 無名ata %> (<%= patient.idno %>)</h2>
+             <h2><%= patient.patnm || '無名' %> (<%= patient.idno %>)</h2>
              <p>生日：<%= patient.birdt %></p>
              <p class="no-data">此病患尚無報告可供對比。</p>
         <% } else { %>
