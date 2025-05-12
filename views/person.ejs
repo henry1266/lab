@@ -79,6 +79,14 @@
             background-color: rgb(240, 240, 240);
             color: rgb(0, 0, 0);
         }
+        .latest-date-col {
+        border: 2px solid #007bff !important;
+        background-color: #e6f0ff; /* 可選：讓最新日期底色稍微不同 */
+        }
+        .abnormal {
+            color: red;
+            font-weight: bold;
+        }
     </style>
 </head>
 <body>
@@ -179,42 +187,17 @@
                                                         const resultNum = parseFloat(itemInReport.result);
                                                         const nlowNum = parseFloat(itemInReport.nlow);
                                                         const nhighNum = parseFloat(itemInReport.nhigh);
+                                                        let isAbnormal = false;
 
-                                                        if (itemName === "HDL Cholesterol") {
-                                                            if (!isNaN(resultNum)) {
-                                                                if (resultNum >= 40) statusSymbol = (resultNum >= 42.5) ? "🟢" : "🟡";
-                                                                else statusSymbol = "🔴";
-                                                                if (resultNum === 45 || resultNum === 42) resultDisplay = `<strong>${itemInReport.result}</strong>`; 
-                                                            }
-                                                        } else if (itemName === "Triglyceride") {
-                                                            if (!isNaN(resultNum)) {
-                                                                if (resultNum >= 30 && resultNum <= 150) statusSymbol = "🟢";
-                                                                else statusSymbol = "🔴";
-                                                                if (resultNum === 136 || resultNum === 138) resultDisplay = `<strong>${itemInReport.result}</strong>`;
-                                                            }
-                                                        } else if (itemName === "LDL Cholesterol") {
-                                                            if (!isNaN(resultNum)) {
-                                                                if (resultNum >= 20 && resultNum <= 130) statusSymbol = "🟢";
-                                                                else statusSymbol = "🔴";
-                                                                if (resultNum === 64 || resultNum === 67) resultDisplay = `<strong>${itemInReport.result}</strong>`;
-                                                            }
-                                                        } else if (itemName === "HbA1c") {
-                                                            if (itemInReport.result) {
-                                                                const hba1cVal = parseFloat(itemInReport.result.replace("%",""));
-                                                                if (!isNaN(hba1cVal)){
-                                                                    if (hba1cVal >= 4.0 && hba1cVal <= 5.6) statusSymbol = "🟢";
-                                                                    else statusSymbol = "🔴";
-                                                                    if (itemInReport.result === "6.6%" || itemInReport.result === "6.9%") resultDisplay = `<strong>${itemInReport.result}</strong>`;
-                                                                }
-                                                            }
-                                                        } else { 
-                                                            if (!isNaN(resultNum) && !isNaN(nlowNum) && !isNaN(nhighNum)) {
-                                                                if (resultNum < nlowNum) statusSymbol = "🔴";
-                                                                else if (resultNum > nhighNum) statusSymbol = "🔴";
-                                                                else statusSymbol = "🟢";
-                                                            }
+                                                        if (!isNaN(resultNum) && !isNaN(nlowNum) && !isNaN(nhighNum)) {
+                                                            isAbnormal = resultNum < nlowNum || resultNum > nhighNum;
                                                         }
-                                                        cellContent = `${resultDisplay} ${statusSymbol}`.trim();
+                                                        if (isAbnormal) {
+                                                            cellContent = `<strong class="abnormal">${resultDisplay}</strong>`;
+                                                        } else {
+                                                            cellContent = resultDisplay;
+                                                        }
+                                                    
                                                     } else {
                                                         cellContent = "—";
                                                     }
@@ -298,6 +281,16 @@
                 });
             }
 
+            // 加上強調最新日期的欄位
+const dateHeaders = document.querySelectorAll("th[class^='date-col-']");
+if (dateHeaders.length > 0) {
+    const latestIndex = dateHeaders.length - 1;
+    const latestColClass = dateHeaders[latestIndex].className;
+
+    document.querySelectorAll(`.comparison-table .${latestColClass}`).forEach(cell => {
+        cell.classList.add("latest-date-col");
+    });
+}
             dateToggleCheckboxes.forEach(checkbox => {
                 checkbox.addEventListener("change", (event) => {
                     const colClass = event.target.dataset.dateCol;
