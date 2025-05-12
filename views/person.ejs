@@ -9,7 +9,7 @@
         .container { max-width: 1200px; margin: auto; background-color: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
         h2, h3 { color: #333; }
         .controls { margin-bottom: 20px; padding: 10px; background-color: #e9ecef; border-radius: 4px; display: flex; flex-wrap: wrap; gap: 15px; align-items: center; }
-        .controls label { margin-right: 10px; font-size: 0.9em; }
+        .controls label { margin-right: 10px; font-size: 0.9em; cursor: pointer; }
         .controls input[type="checkbox"] { margin-right: 5px; vertical-align: middle; }
         .controls button { padding: 8px 12px; background-color: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.9em; }
         .controls button:hover { background-color: #0056b3; }
@@ -61,6 +61,7 @@
         table.comparison-table strong { font-weight: bold; }
         .no-data { color: #999; font-style: italic; text-align: center;}
         .col-hidden { display: none !important; }
+        .row-hidden { display: none !important; }
     </style>
 </head>
 <body>
@@ -75,12 +76,14 @@
                 "血脂肪檢查", "糖尿病檢查", "腎功能", "肝功能", 
                 "血液檢查", "尿液檢查", "糞便檢查", "其他檢查"
             ];
-            const allReportDates = [...new Set(records.map(r => r.rptdt))].sort((a, b) => new Date(b.split("/").join("-")) - new Date(a.split("/").join("-")));
+            // Sort dates: oldest to newest (latest on the right)
+            const allReportDates = [...new Set(records.map(r => r.rptdt))].sort((a, b) => new Date(a.split("/").join("-")) - new Date(b.split("/").join("-")));
             %>
 
             <div class="controls">
                 <button id="toggleNormalRangeBtn">切換正常範圍顯示</button>
-                <div class="date-filters">
+                <label style="margin-left: 15px;"><input type="checkbox" id="filterAbnormalItemsCb"> 只顯示異常項目</label>
+                <div class="date-filters" style="margin-left: 15px;">
                     <span>顯示日期：</span>
                     <% allReportDates.forEach((date, index) => { %>
                         <label>
@@ -128,6 +131,7 @@
                                 <thead>
                                     <tr>
                                         <th class="col-item-name">檢查項目</th>
+                                        <th class="col-unit">單位</th>
                                         <th class="col-normal-range">正常範圍</th>
                                         <% allReportDates.forEach((date, index) => { %>
                                             <th class="date-col-<%= index %>"><%= date %></th>
@@ -139,6 +143,7 @@
                                         <% const details = itemDetailsMap.get(itemName); %>
                                         <tr>
                                             <td class="col-item-name"><%= itemName || '無項目' %></td>
+                                            <td class="col-unit"><%= details.unit %></td>
                                             <td class="col-normal-range"><%= details.range %></td>
                                             <% allReportDates.forEach((reportDate, index) => { %>
                                                 <% 
@@ -186,9 +191,9 @@
                                                             }
                                                         } else { 
                                                             if (!isNaN(resultNum) && !isNaN(nlowNum) && !isNaN(nhighNum)) {
-                                                                if (resultNum < nlowNum) statusSymbol = "🔴";
-                                                                else if (resultNum > nhighNum) statusSymbol = "🔴";
-                                                                else statusSymbol = "🟢";
+                                                                if (resultNum < nlowNum) statusSymbol = "🔴"; // Abnormal low
+                                                                else if (resultNum > nhighNum) statusSymbol = "🔴"; // Abnormal high
+                                                                else statusSymbol = "🟢"; // Normal
                                                             }
                                                         }
                                                         cellContent = `${resultDisplay} ${itemInReport.rstunit || ""} ${statusSymbol}`;
@@ -234,9 +239,38 @@
         document.addEventListener("DOMContentLoaded", () => {
             const toggleNormalRangeBtn = document.getElementById("toggleNormalRangeBtn");
             const dateToggleCheckboxes = document.querySelectorAll(".date-toggle-cb");
+            const filterAbnormalItemsCb = document.getElementById("filterAbnormalItemsCb");
+
+            function applyAbnormalFilter() {
+                const isChecked = filterAbnormalItemsCb.checked;
+                document.querySelectorAll(".comparison-table tbody tr").forEach(row => {
+                    if (isChecked) {
+                        let isRowAbnormal = false;
+                        // Cells: 0: Item Name, 1: Unit, 2: Normal Range, 3 onwards: Date data
+                        const dataCells = row.querySelectorAll("td");
+                        for (let i = 3; i < dataCells.length; i++) {
+                            const cellText = dataCells[i].textContent;
+                            if (cellText.includes('🔴') || cellText.includes('🟡')) {
+                                isRowAbnormal = true;
+                                break;
+                            }
+                        }
+                        if (isRowAbnormal) {
+                            row.classList.remove("row-hidden");
+                        } else {
+                            row.classList.add("row-hidden");
+                        }
+                    } else {
+                        row.classList.remove("row-hidden");
+                    }
+                });
+            }
 
             if (toggleNormalRangeBtn) {
                 toggleNormalRangeBtn.addEventListener("click", () => {
+                    document.querySelectorAll(".comparison-table .col-normal-range, .comparison-table .col-unit").forEach(cell => {
+                         // Toggle normal range visibility, unit column is always visible unless specifically handled
+                    });
                     document.querySelectorAll(".comparison-table .col-normal-range").forEach(cell => {
                         cell.classList.toggle("col-hidden");
                     });
@@ -255,12 +289,16 @@
                         }
                     });
                 });
-                // Initialize based on checked state (all checked by default)
                 const colClass = checkbox.dataset.dateCol;
                 if (!checkbox.checked) {
                      document.querySelectorAll(`.comparison-table .${colClass}`).forEach(cell => cell.classList.add("col-hidden"));
                 }
             });
+
+            if (filterAbnormalItemsCb) {
+                filterAbnormalItemsCb.addEventListener("change", applyAbnormalFilter);
+                // Initial application of filter if needed, though default is unchecked (show all)
+            }
         });
     </script>
 </body>
