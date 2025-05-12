@@ -5,19 +5,19 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>病患報告 - <%= patient.patnm || '無名' %> (<%= patient.idno %>)</title>
     <style>
-        body { font-family: sans-serif; margin: 20px; background-color: #f4f4f4; color: #333; }
-        .container { max-width: 1200px; margin: auto; background-color: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-        h2, h3 { color: #333; }
-        .controls { margin-bottom: 20px; padding: 10px; background-color: #e9ecef; border-radius: 4px; display: flex; flex-wrap: wrap; gap: 15px; align-items: center; }
-        .controls label { margin-right: 10px; font-size: 0.9em; cursor: pointer; }
-        .controls input[type="checkbox"] { margin-right: 5px; vertical-align: middle; }
-        .controls button { padding: 8px 12px; background-color: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.9em; }
+        body { font-family: sans-serif; margin: 10px; background-color: #f4f4f4; color: #333; }
+        .container { max-width: 95%; margin: auto; background-color: #fff; padding: 15px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        h2, h3 { color: #333; margin-top: 10px; margin-bottom: 10px; }
+        .controls { margin-bottom: 15px; padding: 8px; background-color: #e9ecef; border-radius: 4px; display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+        .controls label { margin-right: 8px; font-size: 0.85em; cursor: pointer; }
+        .controls input[type="checkbox"] { margin-right: 4px; vertical-align: middle; }
+        .controls button { padding: 6px 10px; background-color: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.85em; }
         .controls button:hover { background-color: #0056b3; }
-        .date-filters { display: flex; flex-wrap: wrap; gap: 10px; align-items: center;}
+        .date-filters { display: flex; flex-wrap: wrap; gap: 8px; align-items: center;}
         .category-title {
             background-color: #007bff;
             color: white;
-            padding: 10px 15px;
+            padding: 8px 12px;
             margin-bottom: 0px;
             border-radius: 4px 4px 0 0;
             cursor: pointer;
@@ -25,31 +25,32 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-top: 20px;
+            margin-top: 15px;
         }
         .category-title:hover { background-color: #0056b3; }
         .category-content {
             display: block; /* Categories are expanded by default */
             border: 1px solid #007bff;
             border-top: none;
-            padding: 15px;
+            padding: 10px;
             border-radius: 0 0 4px 4px;
-            margin-bottom: 20px;
+            margin-bottom: 15px;
             overflow-x: auto; /* For wider tables */
         }
-        .toggle-icon { font-size: 1.2em; }
-        .back-link { display: inline-block; margin-top: 20px; }
+        .toggle-icon { font-size: 1.1em; }
+        .back-link { display: inline-block; margin-top: 15px; font-size: 0.9em; }
         table.comparison-table {
             border-collapse: collapse;
             width: 100%;
-            margin-top: 10px;
-            box-shadow: 0 2px 3px rgba(0,0,0,0.1);
+            margin-top: 8px;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
         }
         table.comparison-table th, table.comparison-table td {
             border: 1px solid #ddd;
             text-align: left;
-            padding: 10px;
+            padding: 6px 8px; /* Reduced padding */
             vertical-align: middle;
+            font-size: 0.9em; /* Slightly smaller font for compactness */
         }
         table.comparison-table th {
             background-color: #6c757d; 
@@ -59,7 +60,7 @@
         }
         table.comparison-table tr:nth-child(even) { background-color: #f9f9f9; }
         table.comparison-table strong { font-weight: bold; }
-        .no-data { color: #999; font-style: italic; text-align: center;}
+        .no-data { color: #999; font-style: italic; text-align: center; padding: 10px;}
         .col-hidden { display: none !important; }
         .row-hidden { display: none !important; }
     </style>
@@ -68,7 +69,7 @@
     <div class="container">
         <% if (patient && records && records.length > 0) { %>
             <h2><%= patient.patnm || '無名' %> (<%= patient.idno %>)</h2>
-            <p>生日：<%= patient.birdt %></p>
+            <p style="font-size: 0.9em; margin-bottom: 5px;">生日：<%= patient.birdt %></p>
             <h3>共 <%= records.length %> 筆報告 - 橫向對比</h3>
 
             <% 
@@ -76,15 +77,14 @@
                 "血脂肪檢查", "糖尿病檢查", "腎功能", "肝功能", 
                 "血液檢查", "尿液檢查", "糞便檢查", "其他檢查"
             ];
-            // Sort dates: oldest to newest (latest on the right)
             const allReportDates = [...new Set(records.map(r => r.rptdt))].sort((a, b) => new Date(a.split("/").join("-")) - new Date(b.split("/").join("-")));
             %>
 
             <div class="controls">
                 <button id="toggleNormalRangeBtn">切換正常範圍顯示</button>
-                <label style="margin-left: 15px;"><input type="checkbox" id="filterAbnormalItemsCb"> 只顯示異常項目</label>
-                <div class="date-filters" style="margin-left: 15px;">
-                    <span>顯示日期：</span>
+                <label style="margin-left: 10px;"><input type="checkbox" id="filterAbnormalItemsCb"> 只顯示異常項目</label>
+                <div class="date-filters" style="margin-left: 10px;">
+                    <span style="font-size: 0.85em;">顯示日期：</span>
                     <% allReportDates.forEach((date, index) => { %>
                         <label>
                             <input type="checkbox" class="date-toggle-cb" data-date-col="date-col-<%= index %>" checked>
@@ -141,7 +141,7 @@
                                 <tbody>
                                     <% Array.from(uniqueItemsInCategory).sort().forEach(itemName => { %>
                                         <% const details = itemDetailsMap.get(itemName); %>
-                                        <tr>
+                                        <tr data-item-name="<%= itemName %>">
                                             <td class="col-item-name"><%= itemName || '無項目' %></td>
                                             <td class="col-unit"><%= details.unit %></td>
                                             <td class="col-normal-range"><%= details.range %></td>
@@ -191,17 +191,18 @@
                                                             }
                                                         } else { 
                                                             if (!isNaN(resultNum) && !isNaN(nlowNum) && !isNaN(nhighNum)) {
-                                                                if (resultNum < nlowNum) statusSymbol = "🔴"; // Abnormal low
-                                                                else if (resultNum > nhighNum) statusSymbol = "🔴"; // Abnormal high
-                                                                else statusSymbol = "🟢"; // Normal
+                                                                if (resultNum < nlowNum) statusSymbol = "🔴";
+                                                                else if (resultNum > nhighNum) statusSymbol = "🔴";
+                                                                else statusSymbol = "🟢";
                                                             }
                                                         }
-                                                        cellContent = `${resultDisplay} ${itemInReport.rstunit || ""} ${statusSymbol}`;
+                                                        // Modified to remove unit from cellContent
+                                                        cellContent = `${resultDisplay} ${statusSymbol}`.trim();
                                                     } else {
                                                         cellContent = "—";
                                                     }
                                                 %>
-                                                <td class="date-col-<%= index %>"><%- cellContent %></td>
+                                                <td class="date-col-<%= index %>" data-status="<%= statusSymbol %>"><%- cellContent %></td>
                                             <% }); %>
                                         </tr>
                                     <% }); %>
@@ -213,7 +214,7 @@
             <% }); %>
         <% } else if (patient) { %>
              <h2><%= patient.patnm || '無名' %> (<%= patient.idno %>)</h2>
-             <p>生日：<%= patient.birdt %></p>
+             <p style="font-size: 0.9em; margin-bottom: 5px;">生日：<%= patient.birdt %></p>
              <p class="no-data">此病患尚無報告可供對比。</p>
         <% } else { %>
             <p class="no-data">找不到病患資料。</p>
@@ -241,36 +242,37 @@
             const dateToggleCheckboxes = document.querySelectorAll(".date-toggle-cb");
             const filterAbnormalItemsCb = document.getElementById("filterAbnormalItemsCb");
 
-            function applyAbnormalFilter() {
-                const isChecked = filterAbnormalItemsCb.checked;
+            function applyFilters() {
+                const filterAbnormal = filterAbnormalItemsCb.checked;
+                
                 document.querySelectorAll(".comparison-table tbody tr").forEach(row => {
-                    if (isChecked) {
+                    let showRow = true;
+
+                    if (filterAbnormal) {
                         let isRowAbnormal = false;
-                        // Cells: 0: Item Name, 1: Unit, 2: Normal Range, 3 onwards: Date data
-                        const dataCells = row.querySelectorAll("td");
-                        for (let i = 3; i < dataCells.length; i++) {
-                            const cellText = dataCells[i].textContent;
-                            if (cellText.includes('🔴') || cellText.includes('🟡')) {
+                        const dataCells = row.querySelectorAll("td[data-status]");
+                        for (const cell of dataCells) {
+                            const status = cell.dataset.status;
+                            if (status === '🔴' || status === '🟡') {
                                 isRowAbnormal = true;
                                 break;
                             }
                         }
-                        if (isRowAbnormal) {
-                            row.classList.remove("row-hidden");
-                        } else {
-                            row.classList.add("row-hidden");
+                        if (!isRowAbnormal) {
+                            showRow = false;
                         }
-                    } else {
+                    }
+                    
+                    if (showRow) {
                         row.classList.remove("row-hidden");
+                    } else {
+                        row.classList.add("row-hidden");
                     }
                 });
             }
 
             if (toggleNormalRangeBtn) {
                 toggleNormalRangeBtn.addEventListener("click", () => {
-                    document.querySelectorAll(".comparison-table .col-normal-range, .comparison-table .col-unit").forEach(cell => {
-                         // Toggle normal range visibility, unit column is always visible unless specifically handled
-                    });
                     document.querySelectorAll(".comparison-table .col-normal-range").forEach(cell => {
                         cell.classList.toggle("col-hidden");
                     });
@@ -296,8 +298,7 @@
             });
 
             if (filterAbnormalItemsCb) {
-                filterAbnormalItemsCb.addEventListener("change", applyAbnormalFilter);
-                // Initial application of filter if needed, though default is unchecked (show all)
+                filterAbnormalItemsCb.addEventListener("change", applyFilters);
             }
         });
     </script>
