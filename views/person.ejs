@@ -3,11 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>病患報告 - <%= patient.patnm || '(無名)' %> (<%= patient.idno %>)</title>
+    <title>病患報告 - <%= patient.patnm || atas 無名ata %> (<%= patient.idno %>)</title>
     <style>
         body { font-family: sans-serif; margin: 20px; background-color: #f4f4f4; color: #333; }
-        .container { max-width: 1000px; margin: auto; background-color: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .container { max-width: 1200px; margin: auto; background-color: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
         h2, h3 { color: #333; }
+        .controls { margin-bottom: 20px; padding: 10px; background-color: #e9ecef; border-radius: 4px; display: flex; flex-wrap: wrap; gap: 15px; align-items: center; }
+        .controls label { margin-right: 10px; font-size: 0.9em; }
+        .controls input[type="checkbox"] { margin-right: 5px; vertical-align: middle; }
+        .controls button { padding: 8px 12px; background-color: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.9em; }
+        .controls button:hover { background-color: #0056b3; }
+        .date-filters { display: flex; flex-wrap: wrap; gap: 10px; align-items: center;}
         .category-title {
             background-color: #007bff;
             color: white;
@@ -21,9 +27,7 @@
             align-items: center;
             margin-top: 20px;
         }
-        .category-title:hover {
-            background-color: #0056b3;
-        }
+        .category-title:hover { background-color: #0056b3; }
         .category-content {
             display: block; /* Categories are expanded by default */
             border: 1px solid #007bff;
@@ -35,7 +39,6 @@
         }
         .toggle-icon { font-size: 1.2em; }
         .back-link { display: inline-block; margin-top: 20px; }
-
         table.comparison-table {
             border-collapse: collapse;
             width: 100%;
@@ -57,12 +60,13 @@
         table.comparison-table tr:nth-child(even) { background-color: #f9f9f9; }
         table.comparison-table strong { font-weight: bold; }
         .no-data { color: #999; font-style: italic; text-align: center;}
+        .col-hidden { display: none !important; }
     </style>
 </head>
 <body>
     <div class="container">
         <% if (patient && records && records.length > 0) { %>
-            <h2><%= patient.patnm || '(無名)' %> (<%= patient.idno %>)</h2>
+            <h2><%= patient.patnm || atas 無名ata %> (<%= patient.idno %>)</h2>
             <p>生日：<%= patient.birdt %></p>
             <h3>共 <%= records.length %> 筆報告 - 橫向對比</h3>
 
@@ -71,30 +75,40 @@
                 "血脂肪檢查", "糖尿病檢查", "腎功能", "肝功能", 
                 "血液檢查", "尿液檢查", "糞便檢查", "其他檢查"
             ];
+            const allReportDates = [...new Set(records.map(r => r.rptdt))].sort((a, b) => new Date(b.split("/").join("-")) - new Date(a.split("/").join("-")));
+            %>
 
-            // Get all unique report dates, sorted most recent first
-            const allReportDates = [...new Set(records.map(r => r.rptdt))].sort((a, b) => new Date(b.split('/').join('-')) - new Date(a.split('/').join('-')));
+            <div class="controls">
+                <button id="toggleNormalRangeBtn">切換正常範圍顯示</button>
+                <div class="date-filters">
+                    <span>顯示日期：</span>
+                    <% allReportDates.forEach((date, index) => { %>
+                        <label>
+                            <input type="checkbox" class="date-toggle-cb" data-date-col="date-col-<%= index %>" checked>
+                            <%= date %>
+                        </label>
+                    <% }); %>
+                </div>
+            </div>
 
-            orderedCategories.forEach(categoryName => {
-                // Collect all unique items for this category across all reports
+            <% orderedCategories.forEach(categoryName => {
                 const uniqueItemsInCategory = new Set();
-                const itemDetailsMap = new Map(); // To store details like normal range for each item
+                const itemDetailsMap = new Map();
 
                 records.forEach(r => {
                     if (r.categorizedItems && r.categorizedItems[categoryName]) {
                         r.categorizedItems[categoryName].forEach(item => {
                             uniqueItemsInCategory.add(item.itmnm);
                             if (!itemDetailsMap.has(item.itmnm)) {
-                                let rangeStr = item.refrg || '-';
-                                if (rangeStr === '-' && (item.nlow || item.nhigh)) {
+                                let rangeStr = item.refrg || "-";
+                                if (rangeStr === "-" && (item.nlow || item.nhigh)) {
                                     if (item.nlow && item.nhigh) rangeStr = `${item.nlow} ~ ${item.nhigh}`;
                                     else if (item.nlow) rangeStr = `≥ ${item.nlow}`;
                                     else if (item.nhigh) rangeStr = `≤ ${item.nhigh}`;
                                 }
                                 itemDetailsMap.set(item.itmnm, { 
-                                    unit: item.rstunit || '',
+                                    unit: item.rstunit || "",
                                     range: rangeStr,
-                                    // Store one example of nlow/nhigh for generic comparison if needed
                                     nlow: item.nlow,
                                     nhigh: item.nhigh
                                 });
@@ -105,7 +119,7 @@
 
                 if (uniqueItemsInCategory.size > 0) { %>
                     <div class="category-section">
-                        <div class="category-title" onclick="toggleCategory(this)">
+                        <div class="category-title" onclick="toggleCategoryDisplay(this)">
                             <span><%= categoryName %></span>
                             <span class="toggle-icon category-toggle-icon">-</span>
                         </div>
@@ -113,10 +127,10 @@
                             <table class="comparison-table">
                                 <thead>
                                     <tr>
-                                        <th>檢查項目</th>
-                                        <th>正常範圍</th>
-                                        <% allReportDates.forEach(date => { %>
-                                            <th><%= date %></th>
+                                        <th class="col-item-name">檢查項目</th>
+                                        <th class="col-normal-range">正常範圍</th>
+                                        <% allReportDates.forEach((date, index) => { %>
+                                            <th class="date-col-<%= index %>"><%= date %></th>
                                         <% }); %>
                                     </tr>
                                 </thead>
@@ -124,14 +138,13 @@
                                     <% Array.from(uniqueItemsInCategory).sort().forEach(itemName => { %>
                                         <% const details = itemDetailsMap.get(itemName); %>
                                         <tr>
-                                            <td><%= itemName || '(無項目)' %></td>
-                                            <td><%= details.range %></td>
-                                            <% allReportDates.forEach(reportDate => { %>
+                                            <td class="col-item-name"><%= itemName || atas 無項目ata %></td>
+                                            <td class="col-normal-range"><%= details.range %></td>
+                                            <% allReportDates.forEach((reportDate, index) => { %>
                                                 <% 
-                                                    let cellContent = '—';
-                                                    let statusSymbol = '';
-                                                    let resultDisplay = '—';
-
+                                                    let cellContent = "—";
+                                                    let statusSymbol = "";
+                                                    let resultDisplay = "—";
                                                     const reportForDate = records.find(r => r.rptdt === reportDate);
                                                     let itemInReport = null;
                                                     if (reportForDate && reportForDate.categorizedItems && reportForDate.categorizedItems[categoryName]) {
@@ -139,52 +152,51 @@
                                                     }
 
                                                     if (itemInReport) {
-                                                        resultDisplay = itemInReport.result || '—';
+                                                        resultDisplay = itemInReport.result || "—";
                                                         const resultNum = parseFloat(itemInReport.result);
                                                         const nlowNum = parseFloat(itemInReport.nlow);
                                                         const nhighNum = parseFloat(itemInReport.nhigh);
 
-                                                        // Specific logic from user example
-                                                        if (itemName === 'HDL Cholesterol') {
+                                                        if (itemName === "HDL Cholesterol") {
                                                             if (!isNaN(resultNum)) {
-                                                                if (resultNum >= 40) statusSymbol = (resultNum >= 42.5) ? '🟢' : '🟡';
-                                                                else statusSymbol = '🔴';
+                                                                if (resultNum >= 40) statusSymbol = (resultNum >= 42.5) ? "🟢" : "🟡";
+                                                                else statusSymbol = "🔴";
                                                                 if (resultNum === 45 || resultNum === 42) resultDisplay = `<strong>${itemInReport.result}</strong>`; 
                                                             }
-                                                        } else if (itemName === 'Triglyceride') {
+                                                        } else if (itemName === "Triglyceride") {
                                                             if (!isNaN(resultNum)) {
-                                                                if (resultNum >= 30 && resultNum <= 150) statusSymbol = '🟢';
-                                                                else statusSymbol = '🔴';
+                                                                if (resultNum >= 30 && resultNum <= 150) statusSymbol = "🟢";
+                                                                else statusSymbol = "🔴";
                                                                 if (resultNum === 136 || resultNum === 138) resultDisplay = `<strong>${itemInReport.result}</strong>`;
                                                             }
-                                                        } else if (itemName === 'LDL Cholesterol') {
+                                                        } else if (itemName === "LDL Cholesterol") {
                                                             if (!isNaN(resultNum)) {
-                                                                if (resultNum >= 20 && resultNum <= 130) statusSymbol = '🟢';
-                                                                else statusSymbol = '🔴';
+                                                                if (resultNum >= 20 && resultNum <= 130) statusSymbol = "🟢";
+                                                                else statusSymbol = "🔴";
                                                                 if (resultNum === 64 || resultNum === 67) resultDisplay = `<strong>${itemInReport.result}</strong>`;
                                                             }
-                                                        } else if (itemName === 'HbA1c') {
-                                                            if (itemInReport.result) { // HbA1c might be a string like "6.6%"
-                                                                const hba1cVal = parseFloat(itemInReport.result.replace('%',''));
+                                                        } else if (itemName === "HbA1c") {
+                                                            if (itemInReport.result) {
+                                                                const hba1cVal = parseFloat(itemInReport.result.replace("%%",""));
                                                                 if (!isNaN(hba1cVal)){
-                                                                    if (hba1cVal >= 4.0 && hba1cVal <= 5.6) statusSymbol = '🟢';
-                                                                    else statusSymbol = '🔴';
-                                                                    if (itemInReport.result === '6.6%' || itemInReport.result === '6.9%') resultDisplay = `<strong>${itemInReport.result}</strong>`;
+                                                                    if (hba1cVal >= 4.0 && hba1cVal <= 5.6) statusSymbol = "🟢";
+                                                                    else statusSymbol = "🔴";
+                                                                    if (itemInReport.result === "6.6%%" || itemInReport.result === "6.9%%") resultDisplay = `<strong>${itemInReport.result}</strong>`;
                                                                 }
                                                             }
-                                                        } else { // Generic status logic
+                                                        } else { 
                                                             if (!isNaN(resultNum) && !isNaN(nlowNum) && !isNaN(nhighNum)) {
-                                                                if (resultNum < nlowNum) statusSymbol = '🔴';
-                                                                else if (resultNum > nhighNum) statusSymbol = '🔴';
-                                                                else statusSymbol = '🟢';
+                                                                if (resultNum < nlowNum) statusSymbol = "🔴";
+                                                                else if (resultNum > nhighNum) statusSymbol = "🔴";
+                                                                else statusSymbol = "🟢";
                                                             }
                                                         }
-                                                        cellContent = `${resultDisplay} ${itemInReport.rstunit || ''} ${statusSymbol}`;
+                                                        cellContent = `${resultDisplay} ${itemInReport.rstunit || ""} ${statusSymbol}`;
                                                     } else {
-                                                        cellContent = '—';
+                                                        cellContent = "—";
                                                     }
                                                 %>
-                                                <td><%- cellContent %></td>
+                                                <td class="date-col-<%= index %>"><%- cellContent %></td>
                                             <% }); %>
                                         </tr>
                                     <% }); %>
@@ -192,12 +204,10 @@
                             </table>
                         </div>
                     </div>
-                <% } else { %>
-                    <!-- Optional: message if category has no items across all reports -->
                 <% } %>
             <% }); %>
         <% } else if (patient) { %>
-             <h2><%= patient.patnm || '(無名)' %> (<%= patient.idno %>)</h2>
+             <h2><%= patient.patnm || atas 無名ata %> (<%= patient.idno %>)</h2>
              <p>生日：<%= patient.birdt %></p>
              <p class="no-data">此病患尚無報告可供對比。</p>
         <% } else { %>
@@ -207,19 +217,51 @@
     </div>
 
     <script>
-        function toggleCategory(element) {
+        function toggleCategoryDisplay(element) {
             const content = element.nextElementSibling;
-            const icon = element.querySelector('.category-toggle-icon');
-            if (content.style.display === "none" || !content.classList.contains('open')) {
+            const icon = element.querySelector(".category-toggle-icon");
+            if (content.style.display === "none" || !content.classList.contains("open")) {
                 content.style.display = "block";
-                content.classList.add('open');
+                content.classList.add("open");
                 icon.textContent = "-";
             } else {
                 content.style.display = "none";
-                content.classList.remove('open');
+                content.classList.remove("open");
                 icon.textContent = "+";
             }
         }
+
+        document.addEventListener("DOMContentLoaded", () => {
+            const toggleNormalRangeBtn = document.getElementById("toggleNormalRangeBtn");
+            const dateToggleCheckboxes = document.querySelectorAll(".date-toggle-cb");
+
+            if (toggleNormalRangeBtn) {
+                toggleNormalRangeBtn.addEventListener("click", () => {
+                    document.querySelectorAll(".comparison-table .col-normal-range").forEach(cell => {
+                        cell.classList.toggle("col-hidden");
+                    });
+                });
+            }
+
+            dateToggleCheckboxes.forEach(checkbox => {
+                checkbox.addEventListener("change", (event) => {
+                    const colClass = event.target.dataset.dateCol;
+                    const isChecked = event.target.checked;
+                    document.querySelectorAll(`.comparison-table .${colClass}`).forEach(cell => {
+                        if (isChecked) {
+                            cell.classList.remove("col-hidden");
+                        } else {
+                            cell.classList.add("col-hidden");
+                        }
+                    });
+                });
+                // Initialize based on checked state (all checked by default)
+                const colClass = checkbox.dataset.dateCol;
+                if (!checkbox.checked) {
+                     document.querySelectorAll(`.comparison-table .${colClass}`).forEach(cell => cell.classList.add("col-hidden"));
+                }
+            });
+        });
     </script>
 </body>
 </html>
