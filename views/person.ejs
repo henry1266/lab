@@ -6,7 +6,7 @@
     <title>病患報告 - <%= patient.patnm || '無名' %> (<%= patient.idno %>)</title>
     <style>
         body { font-family: sans-serif; margin: 10px; background-color: #f4f4f4; color: #333; }
-        .container { max-width: 95%; margin: auto; background-color: #fff; padding: 15px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .container { max-width: 90%; margin: auto; background-color: #fff; padding: 15px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
         h2, h3 { color: #333; margin-top: 10px; margin-bottom: 10px; }
         .controls { margin-bottom: 15px; padding: 8px; background-color: #e9ecef; border-radius: 4px; display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
         .controls label { margin-right: 8px; font-size: 0.85em; cursor: pointer; }
@@ -84,7 +84,8 @@
                 "血液檢查", "尿液檢查", "糞便檢查", "其他檢查"
             ];
             // Sort dates: oldest to newest (latest on the right)
-            const allReportDates = [...new Set(records.map(r => r.rptdt))].sort((a, b) => new Date(a.split("/").join("-")) - new Date(b.split("/").join("-")));
+            const allReportDates = [...new Set(records.map(r => r.rptdt))]
+    .sort((a, b) => Number(a) - Number(b));
             %>
 
             <div class="controls">
@@ -138,20 +139,20 @@
                                 <thead>
                                     <tr>
                                         <th class="col-item-name">檢查項目</th>
-                                        <th class="col-unit">單位</th>
-                                        <th class="col-normal-range">正常範圍</th>
+                                                                               
                                         <% allReportDates.forEach((date, index) => { %>
                                             <th class="date-col-<%= index %>"><%= date %></th>
                                         <% }); %>
+                                        <th class="col-normal-range">正常範圍</th>
+                                        <th class="col-unit">單位</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     <% Array.from(uniqueItemsInCategory).sort().forEach(itemName => { %>
                                         <% const details = itemDetailsMap.get(itemName); %>
                                         <tr data-item-name="<%= itemName %>">
-                                            <td class="col-item-name"><%= itemName || '無項目' %></td>
-                                            <td class="col-unit"><%= details.unit %></td>
-                                            <td class="col-normal-range"><%= details.range %></td>
+                                            <td class="col-item-name"><%= itemName || '無項目' %></td>                                        
+                                            
                                             <% allReportDates.forEach((reportDate, index) => { %>
                                                 <% 
                                                     let cellContent = "—";
@@ -210,6 +211,8 @@
                                                 %>
                                                 <td class="date-col-<%= index %>" data-status="<%= statusSymbol %>"><%- cellContent %></td>
                                             <% }); %>
+                                            <td class="col-normal-range"><%= details.range %></td>
+                                            <td class="col-unit"><%= details.unit %></td>
                                         </tr>
                                     <% }); %>
                                 </tbody>
