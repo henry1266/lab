@@ -6,35 +6,12 @@
     <title>病患報告 - <%= patient.patnm || '(無名)' %> (<%= patient.idno %>)</title>
     <style>
         body { font-family: sans-serif; margin: 20px; background-color: #f4f4f4; color: #333; }
-        .container { max-width: 800px; margin: auto; background-color: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .container { max-width: 1000px; margin: auto; background-color: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
         h2, h3 { color: #333; }
-        .report-header {
+        .category-title {
             background-color: #007bff;
             color: white;
             padding: 10px 15px;
-            margin-bottom: 10px; /* Add margin to separate from content */
-            border-radius: 4px;
-            cursor: pointer;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        .report-header:hover {
-            background-color: #0056b3;
-        }
-        .report-content-wrapper {
-            display: none; /* Reports are collapsed by default */
-            padding-left: 15px; /* Indent report content slightly */
-            border-left: 3px solid #007bff;
-            margin-bottom: 20px; /* Space between reports */
-        }
-        .report-content-wrapper.open {
-            display: block;
-        }
-        .category-title {
-            background-color: #e9ecef;
-            padding: 10px;
-            margin-top: 10px; /* Space between report header and first category */
             margin-bottom: 0px;
             border-radius: 4px 4px 0 0;
             cursor: pointer;
@@ -42,169 +19,196 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
+            margin-top: 20px;
         }
         .category-title:hover {
-            background-color: #dcdcdc;
+            background-color: #0056b3;
         }
-        .category-content { /* This class is still used by the toggleCategory script for the wrapper div */
-            /* Styles for the content wrapper if any, distinct from table itself */
-            /* display: block; by default if open */
+        .category-content {
+            display: block; /* Categories are expanded by default */
+            border: 1px solid #007bff;
+            border-top: none;
+            padding: 15px;
+            border-radius: 0 0 4px 4px;
+            margin-bottom: 20px;
+            overflow-x: auto; /* For wider tables */
         }
         .toggle-icon { font-size: 1.2em; }
         .back-link { display: inline-block; margin-top: 20px; }
 
-        /* Added table styles */
-        table.health-data {
+        table.comparison-table {
             border-collapse: collapse;
             width: 100%;
-            margin-top: 0; /* Connects to category title if .category-content has no padding */
-            border: 1px solid #e9ecef; /* Match category content border */
-            border-top: none;
-            border-radius: 0 0 4px 4px;
-            box-shadow: none; 
+            margin-top: 10px;
+            box-shadow: 0 2px 3px rgba(0,0,0,0.1);
         }
-        table.health-data th, table.health-data td {
+        table.comparison-table th, table.comparison-table td {
             border: 1px solid #ddd;
             text-align: left;
             padding: 10px;
             vertical-align: middle;
         }
-        table.health-data th {
-            background-color: #6c757d; /* Subtler header for inner table */
+        table.comparison-table th {
+            background-color: #6c757d; 
             color: white;
             font-weight: bold;
+            white-space: nowrap;
         }
-        table.health-data tr:nth-child(even) { background-color: #f9f9f9; }
-        table.health-data strong { font-weight: bold; }
-
+        table.comparison-table tr:nth-child(even) { background-color: #f9f9f9; }
+        table.comparison-table strong { font-weight: bold; }
+        .no-data { color: #999; font-style: italic; text-align: center;}
     </style>
 </head>
 <body>
     <div class="container">
-        <% if (patient) { %>
+        <% if (patient && records && records.length > 0) { %>
             <h2><%= patient.patnm || '(無名)' %> (<%= patient.idno %>)</h2>
             <p>生日：<%= patient.birdt %></p>
-            <h3>共 <%= records.length %> 筆報告</h3>
+            <h3>共 <%= records.length %> 筆報告 - 橫向對比</h3>
 
-            <% records.forEach((r, index) => { %>
-                <div class="report-card">
-                    <div class="report-header" onclick="toggleReport(this)">
-                        <span>報告日期：<%= r.rptdt %>（掛號號碼：<%= r.regno %>）</span>
-                        <span class="toggle-icon report-toggle-icon">+</span>
-                    </div>
-                    <div class="report-content-wrapper">
-                        <% 
-                        const orderedCategories = [
-                            "血脂肪檢查", "糖尿病檢查", "腎功能", "肝功能", 
-                            "血液檢查", "尿液檢查", "糞便檢查", "其他檢查"
-                        ];
-                        const reportCategories = orderedCategories.filter(catName => r.categorizedItems && r.categorizedItems[catName] && r.categorizedItems[catName].length > 0);
-                        %>
+            <% 
+            const orderedCategories = [
+                "血脂肪檢查", "糖尿病檢查", "腎功能", "肝功能", 
+                "血液檢查", "尿液檢查", "糞便檢查", "其他檢查"
+            ];
 
-                        <% reportCategories.forEach(categoryName => { %>
-                            <% const itemsInCategory = r.categorizedItems[categoryName]; %>
-                            <% if (itemsInCategory && itemsInCategory.length > 0) { %>
-                                <div class="category-title" onclick="toggleCategory(this)">
-                                    <span><%= categoryName %> (<%= itemsInCategory.length %>)</span>
-                                    <span class="toggle-icon category-toggle-icon">-</span> <!-- Categories default to expanded -->
-                                </div>
-                                <div class="category-content open"> <!-- Wrapper for the table, toggled by JS -->
-                                    <table class="health-data">
-                                        <thead>
-                                            <tr>
-                                                <th>檢查項目</th>
-                                                <th>結果</th>
-                                                <th>單位</th>
-                                                <th>正常範圍</th>
-                                                <th>狀態</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            <% itemsInCategory.forEach(item => { %>
+            // Get all unique report dates, sorted most recent first
+            const allReportDates = [...new Set(records.map(r => r.rptdt))].sort((a, b) => new Date(b.split('/').join('-')) - new Date(a.split('/').join('-')));
+
+            orderedCategories.forEach(categoryName => {
+                // Collect all unique items for this category across all reports
+                const uniqueItemsInCategory = new Set();
+                const itemDetailsMap = new Map(); // To store details like normal range for each item
+
+                records.forEach(r => {
+                    if (r.categorizedItems && r.categorizedItems[categoryName]) {
+                        r.categorizedItems[categoryName].forEach(item => {
+                            uniqueItemsInCategory.add(item.itmnm);
+                            if (!itemDetailsMap.has(item.itmnm)) {
+                                let rangeStr = item.refrg || '-';
+                                if (rangeStr === '-' && (item.nlow || item.nhigh)) {
+                                    if (item.nlow && item.nhigh) rangeStr = `${item.nlow} ~ ${item.nhigh}`;
+                                    else if (item.nlow) rangeStr = `≥ ${item.nlow}`;
+                                    else if (item.nhigh) rangeStr = `≤ ${item.nhigh}`;
+                                }
+                                itemDetailsMap.set(item.itmnm, { 
+                                    unit: item.rstunit || '',
+                                    range: rangeStr,
+                                    // Store one example of nlow/nhigh for generic comparison if needed
+                                    nlow: item.nlow,
+                                    nhigh: item.nhigh
+                                });
+                            }
+                        });
+                    }
+                });
+
+                if (uniqueItemsInCategory.size > 0) { %>
+                    <div class="category-section">
+                        <div class="category-title" onclick="toggleCategory(this)">
+                            <span><%= categoryName %></span>
+                            <span class="toggle-icon category-toggle-icon">-</span>
+                        </div>
+                        <div class="category-content open">
+                            <table class="comparison-table">
+                                <thead>
+                                    <tr>
+                                        <th>檢查項目</th>
+                                        <th>正常範圍</th>
+                                        <% allReportDates.forEach(date => { %>
+                                            <th><%= date %></th>
+                                        <% }); %>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <% Array.from(uniqueItemsInCategory).sort().forEach(itemName => { %>
+                                        <% const details = itemDetailsMap.get(itemName); %>
+                                        <tr>
+                                            <td><%= itemName || '(無項目)' %></td>
+                                            <td><%= details.range %></td>
+                                            <% allReportDates.forEach(reportDate => { %>
                                                 <% 
+                                                    let cellContent = '—';
                                                     let statusSymbol = '';
-                                                    let resultDisplay = item.result || '—';
-                                                    const resultNum = parseFloat(item.result); 
-                                                    const nlowNum = parseFloat(item.nlow);
-                                                    const nhighNum = parseFloat(item.nhigh);
+                                                    let resultDisplay = '—';
 
-                                                    if (item.itmnm === 'HDL Cholesterol') {
-                                                        if (!isNaN(resultNum)) {
-                                                            if (resultNum >= 40) statusSymbol = (resultNum >= 42.5) ? '🟢' : '🟡'; // 45 Green, 42 Yellow
-                                                            else statusSymbol = '🔴';
-                                                            if (resultNum === 45) resultDisplay = `<strong>${item.result}</strong>`;
-                                                        }
-                                                    } else if (item.itmnm === 'Triglyceride') {
-                                                        if (!isNaN(resultNum)) {
-                                                            if (resultNum >= 30 && resultNum <= 150) statusSymbol = '🟢';
-                                                            else statusSymbol = '🔴';
-                                                            if (resultNum === 138) resultDisplay = `<strong>${item.result}</strong>`;
-                                                        }
-                                                    } else if (item.itmnm === 'LDL Cholesterol') {
-                                                        if (!isNaN(resultNum)) {
-                                                            if (resultNum >= 20 && resultNum <= 130) statusSymbol = '🟢';
-                                                            else statusSymbol = '🔴';
-                                                            if (resultNum === 67) resultDisplay = `<strong>${item.result}</strong>`;
-                                                        }
-                                                    } else if (item.itmnm === 'HbA1c') {
-                                                        if (!isNaN(resultNum)) {
-                                                            if (resultNum >= 4.0 && resultNum <= 5.6) statusSymbol = '🟢';
-                                                            else statusSymbol = '🔴';
-                                                            if (item.result === '6.6%' || item.result === '6.9%') resultDisplay = `<strong>${item.result}</strong>`;
-                                                        }
-                                                    } else {
-                                                        if (!isNaN(resultNum) && !isNaN(nlowNum) && !isNaN(nhighNum)) {
-                                                            if (resultNum < nlowNum) statusSymbol = '🔴';
-                                                            else if (resultNum > nhighNum) statusSymbol = '🔴';
-                                                            else statusSymbol = '🟢';
-                                                        }
+                                                    const reportForDate = records.find(r => r.rptdt === reportDate);
+                                                    let itemInReport = null;
+                                                    if (reportForDate && reportForDate.categorizedItems && reportForDate.categorizedItems[categoryName]) {
+                                                        itemInReport = reportForDate.categorizedItems[categoryName].find(i => i.itmnm === itemName);
                                                     }
-                                                    let rangeStr = item.refrg || '-'; // Prefer item.refrg for range
-                                                    if (rangeStr === '-' && (item.nlow || item.nhigh)) { // Fallback if refrg is not good
-                                                        if (item.nlow && item.nhigh) rangeStr = `${item.nlow} ~ ${item.nhigh}`;
-                                                        else if (item.nlow) rangeStr = `≥ ${item.nlow}`;
-                                                        else if (item.nhigh) rangeStr = `≤ ${item.nhigh}`;
+
+                                                    if (itemInReport) {
+                                                        resultDisplay = itemInReport.result || '—';
+                                                        const resultNum = parseFloat(itemInReport.result);
+                                                        const nlowNum = parseFloat(itemInReport.nlow);
+                                                        const nhighNum = parseFloat(itemInReport.nhigh);
+
+                                                        // Specific logic from user example
+                                                        if (itemName === 'HDL Cholesterol') {
+                                                            if (!isNaN(resultNum)) {
+                                                                if (resultNum >= 40) statusSymbol = (resultNum >= 42.5) ? '🟢' : '🟡';
+                                                                else statusSymbol = '🔴';
+                                                                if (resultNum === 45 || resultNum === 42) resultDisplay = `<strong>${itemInReport.result}</strong>`; 
+                                                            }
+                                                        } else if (itemName === 'Triglyceride') {
+                                                            if (!isNaN(resultNum)) {
+                                                                if (resultNum >= 30 && resultNum <= 150) statusSymbol = '🟢';
+                                                                else statusSymbol = '🔴';
+                                                                if (resultNum === 136 || resultNum === 138) resultDisplay = `<strong>${itemInReport.result}</strong>`;
+                                                            }
+                                                        } else if (itemName === 'LDL Cholesterol') {
+                                                            if (!isNaN(resultNum)) {
+                                                                if (resultNum >= 20 && resultNum <= 130) statusSymbol = '🟢';
+                                                                else statusSymbol = '🔴';
+                                                                if (resultNum === 64 || resultNum === 67) resultDisplay = `<strong>${itemInReport.result}</strong>`;
+                                                            }
+                                                        } else if (itemName === 'HbA1c') {
+                                                            if (itemInReport.result) { // HbA1c might be a string like "6.6%"
+                                                                const hba1cVal = parseFloat(itemInReport.result.replace('%',''));
+                                                                if (!isNaN(hba1cVal)){
+                                                                    if (hba1cVal >= 4.0 && hba1cVal <= 5.6) statusSymbol = '🟢';
+                                                                    else statusSymbol = '🔴';
+                                                                    if (itemInReport.result === '6.6%' || itemInReport.result === '6.9%') resultDisplay = `<strong>${itemInReport.result}</strong>`;
+                                                                }
+                                                            }
+                                                        } else { // Generic status logic
+                                                            if (!isNaN(resultNum) && !isNaN(nlowNum) && !isNaN(nhighNum)) {
+                                                                if (resultNum < nlowNum) statusSymbol = '🔴';
+                                                                else if (resultNum > nhighNum) statusSymbol = '🔴';
+                                                                else statusSymbol = '🟢';
+                                                            }
+                                                        }
+                                                        cellContent = `<%- resultDisplay %> ${itemInReport.rstunit || ''} ${statusSymbol}`;
+                                                    } else {
+                                                        cellContent = '—';
                                                     }
                                                 %>
-                                                <tr>
-                                                    <td><%= item.itmnm || '(無項目)' %></td>
-                                                    <td><%- resultDisplay %></td>
-                                                    <td><%= item.rstunit || '' %></td>
-                                                    <td><%= rangeStr %></td>
-                                                    <td><%= statusSymbol %></td>
-                                                </tr>
+                                                <td><%- cellContent %></td>
                                             <% }); %>
-                                        </tbody>
-                                    </table>
-                                </div>
-                            <% } %>
-                        <% }); %>
+                                        </tr>
+                                    <% }); %>
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
-                </div>
+                <% } else { %>
+                    <!-- Optional: message if category has no items across all reports -->
+                <% } %>
             <% }); %>
+        <% } else if (patient) { %>
+             <h2><%= patient.patnm || '(無名)' %> (<%= patient.idno %>)</h2>
+             <p>生日：<%= patient.birdt %></p>
+             <p class="no-data">此病患尚無報告可供對比。</p>
         <% } else { %>
-            <p>找不到病患資料。</p>
+            <p class="no-data">找不到病患資料。</p>
         <% } %>
         <a href="/" class="back-link">← 回首頁</a>
     </div>
 
     <script>
-        function toggleReport(element) {
-            const contentWrapper = element.nextElementSibling;
-            const icon = element.querySelector('.report-toggle-icon');
-            if (contentWrapper.classList.contains('open')) {
-                contentWrapper.classList.remove('open');
-                contentWrapper.style.display = "none";
-                icon.textContent = "+";
-            } else {
-                contentWrapper.classList.add('open');
-                contentWrapper.style.display = "block";
-                icon.textContent = "-";
-            }
-        }
-
         function toggleCategory(element) {
-            const content = element.nextElementSibling; // This is the .category-content div
+            const content = element.nextElementSibling;
             const icon = element.querySelector('.category-toggle-icon');
             if (content.style.display === "none" || !content.classList.contains('open')) {
                 content.style.display = "block";
